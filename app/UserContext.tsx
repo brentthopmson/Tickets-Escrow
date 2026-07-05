@@ -178,28 +178,36 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
 
 
     const validateAppToken = useCallback(async (token: string): Promise<boolean> => {
+      console.log("[UserContext] validateAppToken: validating", token);
       setIsValidatingApp(true);
       try {
         const data: Admin[] = await fetchWithRetry(APP_SCRIPT_ADMIN_URL);
         const found = data.find(a => a.token === token);
+        console.log("[UserContext] validateAppToken: admin found?", !!found);
         if (found) {
           setAppAdmin(found);
           const ticketsData: Ticket[] = await fetchWithRetry(APP_SCRIPT_TICKET_URL);
           const filtered = ticketsData.filter(t =>
             t.admin === found.username &&
-            (!t.deletedSTAMP || t.deletedSTAMP.trim() === "")
+            (!t.deletedSTAMP || t.deletedSTAMP.trim() === "") &&
+            t.ticketStatus?.toUpperCase() === 'ACTIVE' &&
+            (t.platform || '').toLowerCase().split(',').map(p => p.trim()).includes('escrow')
           );
+          console.log(`[UserContext] validateAppToken: ${filtered.length} tickets for ${found.username}`);
           setTickets(filtered);
           setIsValidApp(true);
+          setLoading(false);
           return true;
         } else {
           setIsValidApp(false);
           return false;
         }
       } catch {
+        console.log("[UserContext] validateAppToken: fetch failed");
         setIsValidApp(false);
         return false;
       } finally {
+        console.log("[UserContext] validateAppToken: done, isValidatingApp=false");
         setIsValidatingApp(false);
       }
     }, [fetchWithRetry]);
@@ -311,17 +319,20 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
   }, [fetchWithRetry]);
 
   const fetchAllTickets = useCallback(async () => {
+    console.log("[UserContext] fetchAllTickets started");
     try {
-      //setLoading(true);
+      setLoading(true);
       const data: Ticket[] = await fetchWithRetry(APP_SCRIPT_TICKET_URL);
       const adminUsername = localStorage.getItem("loggedInAdmin");
       const filteredData = adminUsername ? data.filter(t => t.admin === adminUsername) : data;
+      console.log(`[UserContext] fetchAllTickets: ${data.length} raw, ${filteredData.length} filtered`);
       setTickets(filteredData);
       localStorage.setItem('allTicketsData', JSON.stringify(data));
     } catch (error) {
-      console.error('Error fetching all tickets:', error);
+      console.error('[UserContext] fetchAllTickets error:', error);
     } finally {
-      //setLoading(false);
+      console.log("[UserContext] fetchAllTickets: loading=false");
+      setLoading(false);
     }
   }, [fetchWithRetry]);
 
@@ -381,13 +392,17 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
                   const ticketsData = JSON.parse(cachedAllTicketsData);
                   const adminUsername = localStorage.getItem("loggedInAdmin");
                   const filteredData = adminUsername ? ticketsData.filter((t: Ticket) => t.admin === adminUsername) : ticketsData;
+                  console.log(`[UserContext] Cache hit: ${filteredData.length} tickets loaded`);
                   setTickets(filteredData);
+                  setLoading(false);
+                  fetchAllTickets();
               } catch (e) {
-                  console.error("Error parsing cached all tickets data", e);
+                  console.error("[UserContext] Cache parse error:", e);
                   localStorage.removeItem('allTicketsData');
                   fetchAllTickets();
               }
           } else {
+              console.log("[UserContext] No cache, fetching tickets...");
               fetchAllTickets();
           }
       }

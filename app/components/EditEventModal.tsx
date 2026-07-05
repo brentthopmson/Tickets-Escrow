@@ -34,7 +34,7 @@ export default function EditEventModal({ eventName: initialEventName, dateTime: 
   const [country, setCountry] = useState('');
   const [dateTime, setDateTime] = useState(firstRow.dateTime || '');
   const [coverImage, setCoverImage] = useState(firstRow.coverImage || '');
-  const [ticketStatus, setTicketStatus] = useState(firstRow.ticketStatus || 'ACTIVE');
+  const [ticketStatus, setTicketStatus] = useState(firstRow.ticketStatus || '');
 
   // Local listings editor state
   const [listings, setListings] = useState<Array<{
@@ -161,7 +161,7 @@ export default function EditEventModal({ eventName: initialEventName, dateTime: 
         payload.append("location", finalLocation);
         payload.append("dateTime", dateTime);
         payload.append("coverImage", coverImage);
-        payload.append("ticketStatus", ticketStatus);
+        if (isUpdate) payload.append("ticketStatus", ticketStatus);
         payload.append("platform", "escrow");
 
         // Listing specific info
@@ -226,9 +226,9 @@ export default function EditEventModal({ eventName: initialEventName, dateTime: 
               <span className="text-[10px] font-black text-white/40 uppercase tracking-wider">Active Listing</span>
               <button
                 type="button"
-                onClick={() => setTicketStatus(ticketStatus === 'ACTIVE' ? 'HIDDEN' : 'ACTIVE')}
+                onClick={() => setTicketStatus(ticketStatus === 'ACTIVE' || !ticketStatus ? 'HIDDEN' : 'ACTIVE')}
                 className={`w-10 h-6 flex items-center rounded-full p-1 cursor-pointer transition-all duration-300 ${
-                  ticketStatus === 'ACTIVE' ? 'bg-emerald-500 justify-end' : 'bg-white/10 justify-start'
+                  ticketStatus === 'ACTIVE' || !ticketStatus ? 'bg-emerald-500 justify-end' : 'bg-white/10 justify-start'
                 }`}
               >
                 <span className="bg-[#0f121a] w-4 h-4 rounded-full shadow-md"></span>

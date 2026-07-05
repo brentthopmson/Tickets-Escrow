@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useUser } from '../UserContext';
@@ -11,24 +11,40 @@ function parseAdminSettings(settings: string | undefined) {
   try { return JSON.parse(settings); } catch { return null; }
 }
 
+const APP_SCRIPT_URL = process.env.NEXT_PUBLIC_APP_SCRIPT_URL || "";
+const APP_SCRIPT_ADMIN_URL = APP_SCRIPT_URL + "?sheetname=admin";
+
 export default function ContactPage() {
   const { isValidApp, isValidatingApp, appAdmin } = useUser();
   const searchParams = useSearchParams();
   const token = searchParams.get('token');
+  const [fallbackSettings, setFallbackSettings] = useState<Record<string, string> | null>(null);
+
+  useEffect(() => {
+    if (!token && !appAdmin) {
+      fetch(APP_SCRIPT_ADMIN_URL)
+        .then(r => r.json())
+        .then(data => {
+          const first = Array.isArray(data) ? data[0] : null;
+          if (first?.adminSettings) {
+            const parsed = parseAdminSettings(first.adminSettings);
+            if (parsed) setFallbackSettings(parsed);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [token, appAdmin]);
 
   const contactInfo = useMemo(() => {
-    const settings = parseAdminSettings(appAdmin?.adminSettings);
+    const settings = parseAdminSettings(appAdmin?.adminSettings) || fallbackSettings;
     return {
       whatsapp: settings?.whatsapp || '+1 (210) 728-9032',
       whatsappLink: `https://wa.me/${(settings?.whatsapp || '12107289032').replace(/\D/g, '')}?text=${encodeURIComponent("Hi, I'm interested in tickets")}`,
       telegram: settings?.telegramHandle || '@officialticketescrow',
       telegramLink: `https://t.me/${(settings?.telegramHandle || 'officialticketescrow').replace(/^@/, '')}`,
     };
-  }, [appAdmin]);
+  }, [appAdmin, fallbackSettings]);
 
-  useEffect(() => {
-    if (token && !isValidApp && !isValidatingApp) return;
-  }, [token, isValidApp, isValidatingApp]);
 
   if (token) {
     if (isValidatingApp) {

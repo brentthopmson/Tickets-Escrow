@@ -47,7 +47,9 @@ export default function EventDetailsPage() {
       const matchesEvent = ticket.eventName.trim().toLowerCase() === eventName.trim().toLowerCase() && ticket.dateTime === dateTime;
       const isNotHidden = ticket.ticketStatus?.toUpperCase() !== "HIDDEN";
       const hasListingDetails = ticket.section && ticket.paymentSettings;
-      return isNotDeleted && matchesEvent && isNotHidden && hasListingDetails;
+      const isActive = ticket.ticketStatus?.toUpperCase() === 'ACTIVE';
+      const isEscrow = (ticket.platform || '').toLowerCase().split(',').map(p => p.trim()).includes('escrow');
+      return isNotDeleted && matchesEvent && isNotHidden && hasListingDetails && isActive && isEscrow;
     });
   }, [tickets, eventName, dateTime]);
 
@@ -55,7 +57,9 @@ export default function EventDetailsPage() {
     if (!Array.isArray(tickets)) return null;
     const match = tickets.find(ticket => {
       const isNotDeleted = !ticket.deletedSTAMP || ticket.deletedSTAMP.trim() === "";
-      return isNotDeleted && ticket.eventName.trim().toLowerCase() === eventName.trim().toLowerCase() && ticket.dateTime === dateTime;
+      const isActive = ticket.ticketStatus?.toUpperCase() === 'ACTIVE';
+      const isEscrow = (ticket.platform || '').toLowerCase().split(',').map(p => p.trim()).includes('escrow');
+      return isNotDeleted && isActive && isEscrow && ticket.eventName.trim().toLowerCase() === eventName.trim().toLowerCase() && ticket.dateTime === dateTime;
     });
     return match || null;
   }, [tickets, eventName, dateTime]);

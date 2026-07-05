@@ -56,6 +56,9 @@ export default function EventsPage() {
 
     tickets.forEach(t => {
       if (t.deletedSTAMP?.trim()) return;
+      const pList = (t.platform || '').toLowerCase().split(',').map(p => p.trim());
+      if (!pList.includes('escrow')) return;
+      if (t.ticketStatus?.toUpperCase() !== 'ACTIVE') return;
       const key = `${t.eventName.trim().toLowerCase()}_${t.dateTime}`;
       if (!groups[key]) {
         groups[key] = {
@@ -70,22 +73,16 @@ export default function EventsPage() {
     return Object.values(groups);
   }, [tickets]);
 
-  // Only show events that have at least one active listing
-  const availableEvents = useMemo(() =>
-    groupedEvents.filter(e => e.listings.length > 0),
-    [groupedEvents]
-  );
-
   const categories = useMemo(() => {
     const cats = new Set<string>();
-    availableEvents.forEach(e => { if (e.category) cats.add(e.category); });
+    groupedEvents.forEach(e => { if (e.category) cats.add(e.category); });
     return ['All Events', ...Array.from(cats).sort()];
-  }, [availableEvents]);
+  }, [groupedEvents]);
 
   const filteredEvents = useMemo(() => {
-    if (selectedCategory === 'All Events') return availableEvents;
-    return availableEvents.filter(e => e.category === selectedCategory);
-  }, [availableEvents, selectedCategory]);
+    if (selectedCategory === 'All Events') return groupedEvents;
+    return groupedEvents.filter(e => e.category === selectedCategory);
+  }, [groupedEvents, selectedCategory]);
 
   if (token) {
     if (isValidatingApp) {
@@ -126,7 +123,7 @@ export default function EventsPage() {
         <div className="border-b border-slate-200 bg-slate-50">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-1">Events</h1>
-            <p className="text-slate-500 text-sm">{availableEvents.length} event{availableEvents.length !== 1 ? 's' : ''} available</p>
+            <p className="text-slate-500 text-sm">{groupedEvents.length} event{groupedEvents.length !== 1 ? 's' : ''} available</p>
           </div>
         </div>
 
@@ -157,7 +154,7 @@ export default function EventsPage() {
         {/* Event grid */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
           {loading ? (
-            <div className="flex items-center justify-center py-20">
+            <div className="flex items-center justify-center min-h-[50vh]">
               <div className="animate-spin rounded-full h-8 w-8 border-2 border-slate-300 border-t-slate-900"></div>
             </div>
           ) : filteredEvents.length > 0 ? (
@@ -217,7 +214,9 @@ export default function EventsPage() {
                         </div>
                       </div>
                       <div className="flex items-center justify-between pt-3 border-t border-slate-100">
-                        {isSoldOut ? (
+                        {event.listings.length === 0 ? (
+                          <span className="text-sm text-amber-600 font-medium">Contact for Price</span>
+                        ) : isSoldOut ? (
                           <span className="text-sm text-red-500 font-medium">Sold Out</span>
                         ) : (
                           <div>

@@ -82,7 +82,7 @@ export default function EventDashboardPage() {
                     location: ticket.location || "TBA",
                     category: ticket.category || "Event",
                     coverImage: ticket.coverImage || "",
-                    ticketStatus: ticket.ticketStatus || "ACTIVE",
+                    ticketStatus: ticket.ticketStatus,
                     listings: [],
                     totalListings: 0,
                 };

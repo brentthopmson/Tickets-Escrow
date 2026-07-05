@@ -56,13 +56,16 @@ export default function Home() {
 
     tickets.forEach(t => {
       if (t.deletedSTAMP?.trim()) return;
+      const pList = (t.platform || '').toLowerCase().split(',').map(p => p.trim());
+      if (!pList.includes('escrow')) return;
+      if (t.ticketStatus?.toUpperCase() !== 'ACTIVE') return;
       const key = `${t.eventName.trim().toLowerCase()}_${t.dateTime}`;
       if (!groups[key]) {
         groups[key] = {
           eventName: t.eventName, dateTime: t.dateTime,
           venue: t.venue || 'TBA', location: t.location || 'TBA',
           category: t.category || 'Event', coverImage: t.coverImage || '',
-          ticketStatus: t.ticketStatus || 'ACTIVE', listings: [],
+          ticketStatus: t.ticketStatus, listings: [],
         };
       }
       if (t.section && t.paymentSettings) {
@@ -224,7 +227,7 @@ export default function Home() {
           </div>
 
           {loading ? (
-            <div className="flex items-center justify-center py-20">
+            <div className="flex items-center justify-center min-h-[50vh]">
               <div className="animate-spin rounded-full h-8 w-8 border-2 border-slate-300 border-t-slate-900"></div>
             </div>
           ) : featuredEvents.length > 0 ? (
@@ -295,7 +298,9 @@ export default function Home() {
                         </div>
 
                         <div className="flex items-center justify-between pt-3 border-t border-slate-100">
-                          {isSoldOut ? (
+                          {event.listings.length === 0 ? (
+                            <span className="text-sm text-amber-600 font-medium">Contact for Price</span>
+                          ) : isSoldOut ? (
                             <span className="text-sm text-red-500 font-medium">Sold Out</span>
                           ) : (
                             <div>

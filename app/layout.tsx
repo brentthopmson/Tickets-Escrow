@@ -41,7 +41,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="en" className="h-full">
       <head>
         <meta name="theme-color" content="#0f172a" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -81,7 +81,7 @@ export default function RootLayout({
           }
         `}</style>
       </head>
-      <body className={inter.className}>
+      <body className={`${inter.className} min-h-full`}>
         <div id="splash-screen" suppressHydrationWarning>
           <div className="splash-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
