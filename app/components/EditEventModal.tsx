@@ -74,7 +74,7 @@ export default function EditEventModal({ eventName: initialEventName, dateTime: 
 
     // Parse existing listings
     // Filter out rows that are purely empty "Sold Out" rows
-    const validListings = currentListings.filter(t => t.section && t.paymentSettings);
+    const validListings = currentListings.filter(t => t.section);
     setListings(validListings.map(t => ({
       ticketId: t.ticketId,
       section: t.section || '',
@@ -172,11 +172,15 @@ export default function EditEventModal({ eventName: initialEventName, dateTime: 
         payload.append("currency", item.currency);
         payload.append("description", item.notes);
 
+        console.log('[EditEventModal] Sending payload:', Object.fromEntries(payload));
         const response = await fetch(POST_URL, {
           method: "POST",
           headers: { "Content-Type": "application/x-www-form-urlencoded" },
           body: payload.toString()
         });
+
+        const responseText = await response.text();
+        console.log('[EditEventModal] Response:', responseText, 'Status:', response.status);
 
         if (!response.ok) {
           throw new Error(`Failed to save listing row: ${item.section || 'empty listing'}`);

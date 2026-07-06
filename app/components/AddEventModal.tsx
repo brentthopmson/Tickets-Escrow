@@ -102,7 +102,7 @@ export default function AddEventModal({ onClose }: AddEventModalProps) {
         payload.append("dateTime", dateTime);
         payload.append("coverImage", coverImage);
         payload.append("ticketStatus", "ACTIVE");
-        payload.append("platform", "escrow"); // Set default platform tag
+        payload.append("platform", "escrow");
 
         // Listing specific info
         payload.append("section", listing.section);
@@ -112,11 +112,15 @@ export default function AddEventModal({ onClose }: AddEventModalProps) {
         payload.append("currency", listing.currency);
         payload.append("description", listing.notes);
 
+        console.log('[AddEventModal] Sending payload:', Object.fromEntries(payload));
         const response = await fetch(POST_URL, {
           method: "POST",
           headers: { "Content-Type": "application/x-www-form-urlencoded" },
           body: payload.toString()
         });
+
+        const responseText = await response.text();
+        console.log('[AddEventModal] Response:', responseText, 'Status:', response.status);
 
         if (!response.ok) {
           throw new Error(`Failed to save listing ${i + 1}`);

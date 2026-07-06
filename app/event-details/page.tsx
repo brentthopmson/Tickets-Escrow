@@ -1,43 +1,23 @@
 "use client";
 
-import { useState, useEffect, useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useSearchParams } from 'next/navigation';
 import { useUser } from '../UserContext';
-import { Ticket, Admin } from '../types';
+import { Ticket } from '../types';
 import AppUnavailable from '../components/AppUnavailable';
 
 export default function EventDetailsPage() {
   const searchParams = useSearchParams();
-  const { tickets, fetchAllTickets, isValidApp, isValidatingApp, defaultAdminSettings } = useUser();
-  const token = searchParams.get('token');
-  const [admins, setAdmins] = useState<Admin[]>([]);
-  const [loadingAdmins, setLoadingAdmins] = useState(true);
+  const { tickets, fetchAllTickets, isValidApp, isValidatingApp, defaultAdminSettings, publicAccessToken } = useUser();
+  const token = publicAccessToken;
 
   const eventName = searchParams.get('name') || '';
   const dateTime = searchParams.get('date') || '';
 
   useEffect(() => {
     if (!token) fetchAllTickets();
-
-    const fetchAdmins = async () => {
-      try {
-        const APP_SCRIPT_URL = process.env.NEXT_PUBLIC_APP_SCRIPT_URL || "";
-        const APP_SCRIPT_ADMIN_URL = APP_SCRIPT_URL + "?sheetname=admin";
-        const response = await fetch(APP_SCRIPT_ADMIN_URL);
-        if (response.ok) {
-          const data = await response.json();
-          setAdmins(data);
-        }
-      } catch (e) {
-        console.error("Error fetching admins:", e);
-      } finally {
-        setLoadingAdmins(false);
-      }
-    };
-
-    fetchAdmins();
   }, [fetchAllTickets, token]);
 
   const eventListings = useMemo(() => {
@@ -81,34 +61,6 @@ export default function EventDetailsPage() {
   const getCurrencySymbol = (code?: string) => {
     const symbols: Record<string, string> = { USD: '$', GBP: '£', EUR: '€', NGN: '₦' };
     return symbols[code?.toUpperCase() || 'USD'] || code || '$';
-  };
-
-  const handleWhatsAppClick = (listing: Ticket) => {
-    const creator = admins.find(a => a.username === listing.admin);
-    if (!creator) { alert("Error: Listing admin contact information is unavailable."); return; }
-    let whatsapp = "";
-    try {
-      const settings = JSON.parse(creator.adminSettings || '{}');
-      whatsapp = settings.whatsapp || "";
-    } catch { }
-    if (!whatsapp) { alert("WhatsApp contact details are not configured for this seller."); return; }
-    const cleanedPhone = whatsapp.replace(/\D/g, '');
-    const currencySym = getCurrencySymbol(listing.currency || "USD");
-    const message = `Hello, I am interested in buying tickets for ${eventName} - Section ${listing.section}${listing.row ? `, Row ${listing.row}` : ''} at ${currencySym}${listing.paymentSettings}. Are they still available?`;
-    window.open(`https://wa.me/${cleanedPhone}?text=${encodeURIComponent(message)}`, '_blank');
-  };
-
-  const handleTelegramClick = (listing: Ticket) => {
-    const creator = admins.find(a => a.username === listing.admin);
-    if (!creator) { alert("Error: Listing admin contact information is unavailable."); return; }
-    let telegramHandle = "";
-    try {
-      const settings = JSON.parse(creator.adminSettings || '{}');
-      telegramHandle = settings.telegramHandle || "";
-    } catch { }
-    if (!telegramHandle) { alert("Telegram contact details are not configured for this seller."); return; }
-    const cleanedHandle = telegramHandle.replace(/^@/, '');
-    window.open(`https://t.me/${cleanedHandle}`, '_blank');
   };
 
   const t = (url: string) => token ? `${url}?token=${token}` : url;
@@ -244,68 +196,135 @@ export default function EventDetailsPage() {
         {/* Ticket listings or sold out state */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
           {eventListings.length > 0 ? (
-            <div className="space-y-4">
-              {eventListings.map((listing, index) => {
-                const seatList = listing.seatNumbers ? listing.seatNumbers.split(',').map(s => s.trim()).filter(s => s !== '') : [];
-                const quantity = seatList.length || 1;
-                return (
-                  <div key={index} className="bg-white border border-slate-200 rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-5 hover:border-slate-300 hover:shadow-md transition-all">
-                    <div className="space-y-3">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="px-3 py-1.5 text-xs font-bold rounded-lg bg-slate-900 text-white tracking-wider uppercase">
-                          {listing.section}
+            <div>
+              {/* Heading */}
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h2 className="text-xl font-bold text-slate-900">Available Tickets</h2>
+                  <p className="text-slate-500 text-sm mt-0.5">{eventListings.length} listing{eventListings.length !== 1 ? 's' : ''} available</p>
+                </div>
+                <div className="hidden sm:flex items-center gap-2">
+                  <a
+                    href={(() => { const s = defaultAdminSettings; return `https://wa.me/${(s?.whatsapp || '12107289032').replace(/\D/g, '')}?text=${encodeURIComponent("Hi%2C%20I'm%20interested%20in%20tickets")}`; })()}
+                    target="_blank" rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-white bg-[#25D366] hover:bg-[#1ebe5d] transition-colors text-sm shadow-sm"
+                  >
+                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z" />
+                      <path d="M12 0C5.373 0 0 5.373 0 12c0 2.126.553 4.123 1.522 5.855L.057 23.704a.75.75 0 0 0 .92.92l5.849-1.465A11.945 11.945 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.9 0-3.7-.498-5.26-1.448l-.376-.225-3.9.976.993-3.9-.24-.39A9.953 9.953 0 0 1 2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z" />
+                    </svg>
+                    WhatsApp
+                  </a>
+                  <a
+                    href={(() => { const s = defaultAdminSettings; return `https://t.me/${(s?.telegramHandle || 'officialticketescrow').replace(/^@/, '')}`; })()}
+                    target="_blank" rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-slate-700 border border-slate-200 hover:border-[#229ED9]/50 hover:bg-slate-50 transition-colors text-sm"
+                  >
+                    <svg className="w-4 h-4 text-[#229ED9]" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12l-6.871 4.326-2.962-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.833.941z" />
+                    </svg>
+                    Telegram
+                  </a>
+                </div>
+              </div>
+
+              {/* Desktop table */}
+              <div className="hidden sm:block rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="bg-slate-50 border-b border-slate-200">
+                      <th className="text-left px-5 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Section</th>
+                      <th className="text-left px-5 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Price / Ticket</th>
+                      <th className="text-left px-5 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Available</th>
+                      <th className="text-left px-5 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Notes</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {eventListings.map((listing, index) => {
+                      const price = listing.paymentSettings?.trim();
+                      const isContactPrice = !price || price === '0' || price === '$0' || price.toLowerCase() === 'n/a';
+                      return (
+                        <tr key={index} className="bg-white hover:bg-slate-50 transition-colors">
+                          <td className="px-5 py-4 font-medium text-slate-900">
+                            {listing.section}{listing.row ? ` / Row ${listing.row}` : ''}
+                          </td>
+                          <td className="px-5 py-4">
+                            {isContactPrice ? (
+                              <span className="text-slate-500 text-sm">—</span>
+                            ) : (
+                              <>
+                                <span className="font-bold text-slate-900">{getCurrencySymbol(listing.currency)}{price}</span>
+                                <span className="text-slate-400 text-xs ml-1">{listing.currency || 'USD'}</span>
+                              </>
+                            )}
+                          </td>
+                          <td className="px-5 py-4">
+                            {isContactPrice ? (
+                              <span className="inline-flex px-2 py-0.5 rounded-md text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">Contact for Price</span>
+                            ) : (
+                              <span className="inline-flex px-2 py-0.5 rounded-md text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">Available</span>
+                            )}
+                          </td>
+                          <td className="px-5 py-4 text-slate-400 text-xs max-w-xs truncate">{listing.description || '—'}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Mobile cards */}
+              <div className="sm:hidden space-y-3 pb-24">
+                {eventListings.map((listing, index) => {
+                  const price = listing.paymentSettings?.trim();
+                  const isContactPrice = !price || price === '0' || price === '$0' || price.toLowerCase() === 'n/a';
+                  return (
+                    <div key={index} className="rounded-xl bg-white border border-slate-200 p-4 shadow-sm">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="font-bold text-slate-900">{listing.section}{listing.row ? ` / Row ${listing.row}` : ''}</span>
+                        <span className="font-bold text-lg text-slate-900">
+                          {isContactPrice ? '' : `${getCurrencySymbol(listing.currency)}${price}`}
                         </span>
-                        {listing.row && (
-                          <span className="px-3 py-1.5 text-xs font-semibold bg-slate-100 text-slate-600 border border-slate-200 rounded-lg">
-                            Row {listing.row}
-                          </span>
+                      </div>
+                      <div className="flex items-center justify-between text-sm text-slate-500">
+                        {isContactPrice ? (
+                          <span className="inline-flex px-2 py-0.5 rounded-md text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">Contact for Price</span>
+                        ) : (
+                          <span className="inline-flex px-2 py-0.5 rounded-md text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">Available</span>
                         )}
-                        <span className="px-3 py-1.5 text-xs font-semibold bg-slate-100 text-slate-600 border border-slate-200 rounded-lg flex items-center gap-1.5">
-                          <svg className="w-3.5 h-3.5 text-slate-400" viewBox="0 0 20 20" fill="currentColor">
-                            <path d="M0 6a2 2 0 012-2h10a2 2 0 012 2v8a2 2 0 01-2 2H2a2 2 0 01-2-2V6z" />
-                            <path d="M14 4h4a2 2 0 012 2v8a2 2 0 01-2 2h-4V4z" />
-                          </svg>
-                          Qty: {quantity}
-                        </span>
-                      </div>
-                      {listing.description && (
-                        <p className="text-sm text-slate-400 italic">&ldquo;{listing.description}&rdquo;</p>
-                      )}
-                    </div>
-                    <div className="flex flex-row sm:flex-col items-center sm:items-end gap-3 shrink-0">
-                      <div className="flex items-center gap-3 sm:gap-2 sm:flex-row-reverse">
-                        <span className="text-2xl font-bold text-slate-900">
-                          {getCurrencySymbol(listing.currency)}{listing.paymentSettings}
-                        </span>
-                        <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">each</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => handleWhatsAppClick(listing)}
-                          disabled={loadingAdmins}
-                          className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-white bg-[#25D366] hover:bg-[#1ebe5d] transition-colors text-sm shadow-sm"
-                        >
-                          <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
-                            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z" />
-                            <path d="M12 0C5.373 0 0 5.373 0 12c0 2.126.553 4.123 1.522 5.855L.057 23.704a.75.75 0 0 0 .92.92l5.849-1.465A11.945 11.945 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.9 0-3.7-.498-5.26-1.448l-.376-.225-3.9.976.993-3.9-.24-.39A9.953 9.953 0 0 1 2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z" />
-                          </svg>
-                          WhatsApp
-                        </button>
-                        <button
-                          onClick={() => handleTelegramClick(listing)}
-                          disabled={loadingAdmins}
-                          className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-white bg-[#0088cc] hover:bg-[#0077b5] transition-colors text-sm shadow-sm"
-                        >
-                          <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
-                            <path d="M12 0C5.37 0 0 5.37 0 12s5.37 12 12 12 12-5.37 12-12S18.63 0 12 0zm5.56 8.16l-1.92 9.06c-.14.65-.53.81-1.08.5l-2.93-2.16-1.41 1.36c-.16.16-.29.29-.6.29l.21-2.98 5.43-4.91c.24-.21-.05-.33-.37-.12l-6.72 4.23-2.89-.9c-.63-.2-.64-.63.13-.93l11.29-4.36c.52-.19.98.12.82.98z" />
-                          </svg>
-                          Telegram
-                        </button>
+                        {listing.description && <span className="text-xs text-slate-400 truncate max-w-[60%]">{listing.description}</span>}
                       </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
+
+              {/* Mobile fixed bottom CTA bar */}
+              <div className="sm:hidden fixed bottom-0 left-0 right-0 p-4 bg-white/95 border-t border-slate-200 backdrop-blur-sm z-40">
+                <div className="flex gap-3">
+                  <a
+                    href={(() => { const s = defaultAdminSettings; return `https://wa.me/${(s?.whatsapp || '12107289032').replace(/\D/g, '')}?text=${encodeURIComponent("Hi%2C%20I'm%20interested%20in%20tickets")}`; })()}
+                    target="_blank" rel="noopener noreferrer"
+                    className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl font-semibold text-white bg-[#25D366] hover:bg-[#1ebe5d] transition-colors"
+                  >
+                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z" />
+                      <path d="M12 0C5.373 0 0 5.373 0 12c0 2.126.553 4.123 1.522 5.855L.057 23.704a.75.75 0 0 0 .92.92l5.849-1.465A11.945 11.945 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.9 0-3.7-.498-5.26-1.448l-.376-.225-3.9.976.993-3.9-.24-.39A9.953 9.953 0 0 1 2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z" />
+                    </svg>
+                    WhatsApp
+                  </a>
+                  <a
+                    href={(() => { const s = defaultAdminSettings; return `https://t.me/${(s?.telegramHandle || 'officialticketescrow').replace(/^@/, '')}`; })()}
+                    target="_blank" rel="noopener noreferrer"
+                    className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl font-semibold text-slate-700 border border-slate-200 bg-white hover:border-[#229ED9]/50 transition-colors"
+                  >
+                    <svg className="w-5 h-5 text-[#229ED9]" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12l-6.871 4.326-2.962-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.833.941z" />
+                    </svg>
+                    Telegram
+                  </a>
+                </div>
+              </div>
             </div>
           ) : (
             <div className="text-center py-16 rounded-2xl bg-slate-50 border border-slate-200">

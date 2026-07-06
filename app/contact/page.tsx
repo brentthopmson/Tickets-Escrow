@@ -2,7 +2,6 @@
 
 import { useMemo } from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
 import { useUser } from '../UserContext';
 import AppUnavailable from '../components/AppUnavailable';
 
@@ -12,9 +11,8 @@ function parseAdminSettings(settings: string | undefined) {
 }
 
 export default function ContactPage() {
-  const { isValidApp, isValidatingApp, appAdmin, defaultAdminSettings } = useUser();
-  const searchParams = useSearchParams();
-  const token = searchParams.get('token');
+  const { isValidApp, isValidatingApp, appAdmin, defaultAdminSettings, publicAccessToken } = useUser();
+  const token = publicAccessToken;
 
   const contactInfo = useMemo(() => {
     const settings = parseAdminSettings(appAdmin?.adminSettings) || defaultAdminSettings;

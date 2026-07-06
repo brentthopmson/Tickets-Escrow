@@ -36,6 +36,7 @@ interface UserContextProps {
     verifyAdminSession: () => Promise<{ valid: boolean; status?: string; plan?: string; subscriptionExpiry?: string }>;
     validateAppToken: (token: string) => Promise<boolean>;
     defaultAdminSettings: Record<string, string> | null;
+    publicAccessToken: string | null;
     logout: () => void;
 }
 
@@ -66,6 +67,7 @@ const UserContext = createContext<UserContextProps>({
     verifyAdminSession: async () => ({ valid: false }),
     validateAppToken: async () => false,
     defaultAdminSettings: null,
+    publicAccessToken: null,
     logout: () => { },
 });
 
@@ -82,6 +84,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     const [isValidApp, setIsValidApp] = useState(false);
     const [isValidatingApp, setIsValidatingApp] = useState(true);
     const [defaultAdminSettings, setDefaultAdminSettings] = useState<Record<string, string> | null>(null);
+    const [publicAccessToken, setPublicAccessToken] = useState<string | null>(null);
     const searchParams = useSearchParams();
     const router = useRouter();
     const initialLoad = useRef(true);
@@ -345,16 +348,26 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
       const idFromUrl = searchParams.get('id');
-      const token = searchParams.get('token');
+      const urlToken = searchParams.get('token');
+
+      // Sync token: URL → localStorage, fallback to stored token
+      let resolvedToken: string | null = null;
+      if (urlToken) {
+        localStorage.setItem('publicAccessToken', urlToken);
+        resolvedToken = urlToken;
+      } else {
+        resolvedToken = localStorage.getItem('publicAccessToken');
+      }
+      setPublicAccessToken(resolvedToken);
 
       // Not in app mode (no token) - mark validation as done
-      if (!token) {
+      if (!resolvedToken) {
         setIsValidatingApp(false);
       }
 
       // If in app mode (public pages with token), delegate to validateAppToken
-      if (token && !localStorage.getItem("loggedInAdmin")) {
-        validateAppToken(token);
+      if (resolvedToken && !localStorage.getItem("loggedInAdmin")) {
+        validateAppToken(resolvedToken);
         return;
       }
 
@@ -493,6 +506,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     verifyAdminSession,
     validateAppToken,
     defaultAdminSettings,
+    publicAccessToken,
     logout,
   }), [
     user,
@@ -506,6 +520,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     isValidApp,
     isValidatingApp,
     defaultAdminSettings,
+    publicAccessToken,
     setUser,
     setUsers,
     setTicket,

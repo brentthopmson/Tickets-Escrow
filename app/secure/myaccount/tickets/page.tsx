@@ -89,7 +89,7 @@ export default function EventDashboardPage() {
             }
 
             // Count valid listings (with section and price)
-            if (ticket.section && ticket.paymentSettings) {
+            if (ticket.section) {
                 groups[groupKey].listings.push(ticket);
                 groups[groupKey].totalListings++;
             }

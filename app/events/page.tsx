@@ -3,7 +3,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useSearchParams } from 'next/navigation';
 import { useUser } from '../UserContext';
 import { Ticket } from '../types';
 import AppUnavailable from '../components/AppUnavailable';
@@ -37,9 +36,8 @@ function formatDate(dateStr: string) {
 }
 
 export default function EventsPage() {
-  const { tickets, loading, fetchAllTickets, isValidApp, isValidatingApp, defaultAdminSettings } = useUser();
-  const searchParams = useSearchParams();
-  const token = searchParams.get('token');
+  const { tickets, loading, fetchAllTickets, isValidApp, isValidatingApp, defaultAdminSettings, publicAccessToken } = useUser();
+  const token = publicAccessToken;
   const t = (url: string) => token ? `${url}?token=${token}` : url;
   const [selectedCategory, setSelectedCategory] = useState('All Events');
 
