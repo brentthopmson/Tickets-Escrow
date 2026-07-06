@@ -10,7 +10,7 @@ import AppUnavailable from '../components/AppUnavailable';
 
 export default function EventDetailsPage() {
   const searchParams = useSearchParams();
-  const { tickets, fetchAllTickets, isValidApp, isValidatingApp } = useUser();
+  const { tickets, fetchAllTickets, isValidApp, isValidatingApp, defaultAdminSettings } = useUser();
   const token = searchParams.get('token');
   const [admins, setAdmins] = useState<Admin[]>([]);
   const [loadingAdmins, setLoadingAdmins] = useState(true);
@@ -318,7 +318,7 @@ export default function EventDetailsPage() {
               <p className="text-slate-500 mb-6">All tickets for this event have been sold.</p>
               <div className="flex flex-wrap justify-center gap-2">
                 <a
-                  href="https://wa.me/12107289032?text=Hi%2C%20I'm%20interested%20in%20tickets"
+                  href={(() => { const s = defaultAdminSettings; return `https://wa.me/${(s?.whatsapp || '12107289032').replace(/\D/g, '')}?text=${encodeURIComponent("Hi%2C%20I'm%20interested%20in%20tickets")}`; })()}
                   target="_blank" rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-white bg-[#25D366] hover:bg-[#1ebe5d] transition-colors text-sm shadow-sm"
                 >
@@ -329,7 +329,7 @@ export default function EventDetailsPage() {
                   WhatsApp Waitlist
                 </a>
                 <a
-                  href="https://t.me/officialticketescrow"
+                  href={(() => { const s = defaultAdminSettings; return `https://t.me/${(s?.telegramHandle || 'officialticketescrow').replace(/^@/, '')}`; })()}
                   target="_blank" rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-slate-700 border border-slate-200 hover:border-[#229ED9]/50 hover:bg-slate-50 transition-colors text-sm"
                 >
@@ -413,8 +413,8 @@ export default function EventDetailsPage() {
               <Link href={t('/admin')} className="hover:text-slate-600 transition-colors">Admin</Link>
             </span>
             <div className="flex items-center gap-4">
-              <a href="https://wa.me/12107289032?text=Hi%2C%20I'm%20interested%20in%20tickets" target="_blank" rel="noopener noreferrer" className="hover:text-slate-600 transition-colors">WhatsApp: +1 (210) 728-9032</a>
-              <a href="https://t.me/officialticketescrow" target="_blank" rel="noopener noreferrer" className="hover:text-slate-600 transition-colors">Telegram: @officialticketescrow</a>
+              <a href={(() => { const s = defaultAdminSettings; return `https://wa.me/${(s?.whatsapp || '12107289032').replace(/\D/g, '')}?text=${encodeURIComponent("Hi%2C%20I'm%20interested%20in%20tickets")}`; })()} target="_blank" rel="noopener noreferrer" className="hover:text-slate-600 transition-colors">WhatsApp: {(defaultAdminSettings?.whatsapp || '+1 (210) 728-9032')}</a>
+              <a href={(() => { const s = defaultAdminSettings; return `https://t.me/${(s?.telegramHandle || 'officialticketescrow').replace(/^@/, '')}`; })()} target="_blank" rel="noopener noreferrer" className="hover:text-slate-600 transition-colors">Telegram: {(defaultAdminSettings?.telegramHandle || '@officialticketescrow')}</a>
             </div>
           </div>
         </div>

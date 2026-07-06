@@ -38,7 +38,7 @@ function formatDate(dateStr: string) {
 }
 
 export default function Home() {
-  const { tickets, loading, fetchAllTickets, isOffline, isValidApp, isValidatingApp } = useUser();
+  const { tickets, loading, fetchAllTickets, isOffline, isValidApp, isValidatingApp, defaultAdminSettings } = useUser();
   const searchParams = useSearchParams();
   const token = searchParams.get('token');
   const t = (url: string) => token ? `${url}?token=${token}` : url;
@@ -102,6 +102,15 @@ export default function Home() {
     </header>
   );
 
+  const contactInfo = useMemo(() => {
+    const s = defaultAdminSettings;
+    const w = s?.whatsapp || '+1 (210) 728-9032';
+    const wLink = `https://wa.me/${(s?.whatsapp || '12107289032').replace(/\D/g, '')}?text=${encodeURIComponent("Hi, I'm interested in tickets")}`;
+    const t = s?.telegramHandle || '@officialticketescrow';
+    const tLink = `https://t.me/${(s?.telegramHandle || 'officialticketescrow').replace(/^@/, '')}`;
+    return { whatsapp: w, whatsappLink: wLink, telegram: t, telegramLink: tLink };
+  }, [defaultAdminSettings]);
+
   const footerEl = (
     <footer className="border-t border-slate-200 bg-slate-50 mt-auto">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
@@ -127,11 +136,11 @@ export default function Home() {
             <Link href={t('/admin')} className="hover:text-slate-600 transition-colors">Admin</Link>
           </span>
           <div className="flex items-center gap-4">
-            <a href="https://wa.me/12107289032?text=Hi%2C%20I'm%20interested%20in%20tickets" target="_blank" rel="noopener noreferrer" className="hover:text-slate-600 transition-colors">
-              WhatsApp: +1 (210) 728-9032
+            <a href={contactInfo.whatsappLink} target="_blank" rel="noopener noreferrer" className="hover:text-slate-600 transition-colors">
+              WhatsApp: {contactInfo.whatsapp}
             </a>
-            <a href="https://t.me/officialticketescrow" target="_blank" rel="noopener noreferrer" className="hover:text-slate-600 transition-colors">
-              Telegram: @officialticketescrow
+            <a href={contactInfo.telegramLink} target="_blank" rel="noopener noreferrer" className="hover:text-slate-600 transition-colors">
+              Telegram: {contactInfo.telegram}
             </a>
           </div>
         </div>

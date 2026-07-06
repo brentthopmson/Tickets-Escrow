@@ -151,7 +151,7 @@ export default function EditEventModal({ eventName: initialEventName, dateTime: 
 
         const payload = new URLSearchParams();
         payload.append("action", isUpdate ? "updateTicket" : "addTicket");
-        payload.append("ticketId", targetTicketId);
+        if (isUpdate) payload.append("ticketId", targetTicketId);
         payload.append("admin", adminUsername);
         
         // Event metadata

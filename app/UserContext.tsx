@@ -35,6 +35,7 @@ interface UserContextProps {
     loginWithToken: (token: string) => Promise<boolean>;
     verifyAdminSession: () => Promise<{ valid: boolean; status?: string; plan?: string; subscriptionExpiry?: string }>;
     validateAppToken: (token: string) => Promise<boolean>;
+    defaultAdminSettings: Record<string, string> | null;
     logout: () => void;
 }
 
@@ -64,6 +65,7 @@ const UserContext = createContext<UserContextProps>({
     loginWithToken: async () => false,
     verifyAdminSession: async () => ({ valid: false }),
     validateAppToken: async () => false,
+    defaultAdminSettings: null,
     logout: () => { },
 });
 
@@ -79,6 +81,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     const [appAdmin, setAppAdmin] = useState<Admin | null>(null);
     const [isValidApp, setIsValidApp] = useState(false);
     const [isValidatingApp, setIsValidatingApp] = useState(true);
+    const [defaultAdminSettings, setDefaultAdminSettings] = useState<Record<string, string> | null>(null);
     const searchParams = useSearchParams();
     const router = useRouter();
     const initialLoad = useRef(true);
@@ -411,6 +414,21 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
           localStorage.removeItem('ticketData');
           setTicket(null);
       }
+
+      // Fetch default admin settings for public pages (contact info)
+      if (!appAdmin) {
+        fetchWithRetry(APP_SCRIPT_ADMIN_URL).then((data: Admin[]) => {
+          const first = data?.[0];
+          if (first?.adminSettings) {
+            try {
+              const parsed = JSON.parse(first.adminSettings);
+              if (parsed.whatsapp || parsed.telegramHandle) {
+                setDefaultAdminSettings(parsed);
+              }
+            } catch {}
+          }
+        }).catch(() => {});
+      }
   }, [searchParams, router, fetchUserData, fetchAllUsers, fetchAllTickets, fetchTicketData, validateAppToken]);
 
   // Restore admin session from localStorage + background refresh
@@ -474,6 +492,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     loginWithToken,
     verifyAdminSession,
     validateAppToken,
+    defaultAdminSettings,
     logout,
   }), [
     user,
@@ -486,6 +505,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     appAdmin,
     isValidApp,
     isValidatingApp,
+    defaultAdminSettings,
     setUser,
     setUsers,
     setTicket,

@@ -37,7 +37,7 @@ function formatDate(dateStr: string) {
 }
 
 export default function EventsPage() {
-  const { tickets, loading, fetchAllTickets, isValidApp, isValidatingApp } = useUser();
+  const { tickets, loading, fetchAllTickets, isValidApp, isValidatingApp, defaultAdminSettings } = useUser();
   const searchParams = useSearchParams();
   const token = searchParams.get('token');
   const t = (url: string) => token ? `${url}?token=${token}` : url;
@@ -272,8 +272,8 @@ export default function EventsPage() {
               <Link href={t('/admin')} className="hover:text-slate-600 transition-colors">Admin</Link>
             </span>
             <div className="flex items-center gap-4">
-              <a href="https://wa.me/12107289032?text=Hi%2C%20I'm%20interested%20in%20tickets" target="_blank" rel="noopener noreferrer" className="hover:text-slate-600 transition-colors">WhatsApp: +1 (210) 728-9032</a>
-              <a href="https://t.me/officialticketescrow" target="_blank" rel="noopener noreferrer" className="hover:text-slate-600 transition-colors">Telegram: @officialticketescrow</a>
+              <a href={(() => { const s = defaultAdminSettings; return `https://wa.me/${(s?.whatsapp || '12107289032').replace(/\D/g, '')}?text=${encodeURIComponent("Hi, I'm interested in tickets")}`; })()} target="_blank" rel="noopener noreferrer" className="hover:text-slate-600 transition-colors">WhatsApp: {(defaultAdminSettings?.whatsapp || '+1 (210) 728-9032')}</a>
+              <a href={(() => { const s = defaultAdminSettings; return `https://t.me/${(s?.telegramHandle || 'officialticketescrow').replace(/^@/, '')}`; })()} target="_blank" rel="noopener noreferrer" className="hover:text-slate-600 transition-colors">Telegram: {(defaultAdminSettings?.telegramHandle || '@officialticketescrow')}</a>
             </div>
           </div>
         </div>
