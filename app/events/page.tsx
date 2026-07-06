@@ -88,7 +88,7 @@ export default function EventsPage() {
   if (token) {
     if (isValidatingApp) {
       return (
-        <div className="min-h-full flex flex-col antialiased bg-white">
+        <div className="min-h-screen flex flex-col antialiased bg-white">
           <main className="flex-1 flex items-center justify-center">
             <div className="animate-spin rounded-full h-8 w-8 border-2 border-slate-300 border-t-slate-900"></div>
           </main>
@@ -99,7 +99,7 @@ export default function EventsPage() {
   }
 
   return (
-    <div className="min-h-full flex flex-col antialiased">
+    <div className="min-h-screen flex flex-col antialiased">
       <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/95 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">

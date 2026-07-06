@@ -151,7 +151,7 @@ export default function Home() {
 
   if (isOffline) {
     return (
-      <div className="min-h-full flex flex-col antialiased bg-white">
+      <div className="min-h-screen flex flex-col antialiased bg-white">
         {headerNav}
         <main className="flex-1 flex items-center justify-center">
           <div className="text-center py-24">
@@ -169,7 +169,7 @@ export default function Home() {
   if (token) {
     if (isValidatingApp) {
       return (
-        <div className="min-h-full flex flex-col antialiased bg-white">
+        <div className="min-h-screen flex flex-col antialiased bg-white">
           <main className="flex-1 flex items-center justify-center">
             <div className="animate-spin rounded-full h-8 w-8 border-2 border-slate-300 border-t-slate-900"></div>
           </main>
@@ -180,7 +180,7 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-full flex flex-col antialiased">
+    <div className="min-h-screen flex flex-col antialiased">
       {headerNav}
 
       <main>
